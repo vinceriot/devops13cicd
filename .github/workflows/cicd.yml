@@ -1,0 +1,51 @@
+name: LINT-TEST-BUILD-CHECK
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies and run linter
+        run: |
+          pip install -r requirements.txt
+          pylint server/application.py
+
+  unit-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies and run unit tests
+        run: |
+          pip install -r requirements.txt
+          pytest --junitxml=junit/test-results.xml
+
+  build-test:
+    needs: [lint, unit-tests]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t test-image ./server --file ./server/dockerfile
+      - name: Run Docker container
+        run: docker run -d --name app-server8000 -p 8000:8000 --restart unless-stopped test-image
+      - name: Wait for server to start
+        run: sleep 11
+      - name: Verify Docker container
+        run: docker ps -a
+      - name: Test server response
+        run: curl 127.0.0.1:8000
