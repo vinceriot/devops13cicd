@@ -1,3 +1,8 @@
+"""
+This module contains the main application logic for the HTTP server.
+It defines the 'TestMe' class and provides basic HTTP server functionality.
+"""
+
 import http.server
 import socketserver
 
